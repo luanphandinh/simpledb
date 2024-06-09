@@ -1,8 +1,5 @@
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "statement.c"
+#include <stdbool.h>
 
 InputBuffer *new_input_buffer() {
   InputBuffer *input_buffer = (InputBuffer *)malloc(sizeof(InputBuffer));
@@ -34,9 +31,10 @@ void close_input_buffer(InputBuffer *input_buffer) {
 
 void print_prompt() { printf("db > "); }
 
-MetaCommandResult do_meta_command(InputBuffer *input_buffer) {
+MetaCommandResult do_meta_command(InputBuffer *input_buffer, Table *table) {
   if (strcmp(input_buffer->buffer, ".exit") == 0) {
     close_input_buffer(input_buffer);
+    free_table(table);
     exit(EXIT_SUCCESS);
   } else {
     return META_COMMAND_UNREGONIZED;
@@ -45,12 +43,13 @@ MetaCommandResult do_meta_command(InputBuffer *input_buffer) {
 
 int main() {
   InputBuffer *input_buffer = new_input_buffer();
+  Table* table = new_table();
   while (true) {
     print_prompt();
     read_line(input_buffer);
 
     if (input_buffer->buffer[0] == '.') {
-      switch (do_meta_command(input_buffer)) {
+      switch (do_meta_command(input_buffer, table)) {
       case (META_COMMAND_SUCCESS):
         continue;
       case (META_COMMAND_UNREGONIZED):
@@ -63,11 +62,21 @@ int main() {
     switch (prepare_statement(input_buffer, &statement)) {
     case (PREPARE_SUCCESS):
       break;
+    case (PREPARE_SYNTAX_ERROR):
+      printf("Failed to prepare insert statement'%s'\n", input_buffer->buffer);
+      break;
     case (PREPARE_UNREGONIZED_STATEMENT):
       printf("Unregonized key word at start of '%s'\n", input_buffer->buffer);
       continue;
     }
-    execute_statement(&statement);
-    printf("Executed.\n");
+
+    switch (execute_statement(&statement, table)) {
+      case (EXECUTE_SUCCESS):
+        printf("Executed.\n");
+        break;
+      case (EXECUTE_TABLE_FULL):
+        printf("Error: table full.\n");
+        break;
+    }
   }
 }
