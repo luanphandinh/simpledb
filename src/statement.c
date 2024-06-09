@@ -1,16 +1,24 @@
-#include <string.h>
 #include "types.c"
+#include <string.h>
+
+PrepareResult prepare_insert_statement(InputBuffer *input_buffer, Statement *statement) {
+  statement->type = STATEMENT_INSERT;
+  return PREPARE_SUCCESS;
+}
+
+PrepareResult prepare_update_statement(InputBuffer *input_buffer, Statement *statement) {
+  statement->type = STATEMENT_INSERT;
+  return PREPARE_SUCCESS;
+}
 
 PrepareResult prepare_statement(InputBuffer *input_buffer,
                                 Statement *statement) {
   if (strncmp(input_buffer->buffer, "insert", 6) == 0) {
-    statement->type = STATEMENT_INSERT;
-    return PREPARE_SUCCESS;
+    return prepare_insert_statement(input_buffer, statement);
   }
 
   if (strncmp(input_buffer->buffer, "update", 6) == 0) {
-    statement->type = STATEMENT_UPDATE;
-    return PREPARE_SUCCESS;
+    return prepare_update_statement(input_buffer, statement);
   }
 
   return PREPARE_UNREGONIZED_STATEMENT;
